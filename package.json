@@ -4,25 +4,29 @@
   "description": "Agent-friendly CLI bridge for Gemini CLI web search, web fetch, and image analysis.",
   "type": "module",
   "bin": {
-    "gemini-cli-bridge": "./bin/gemini-cli-bridge.ts",
-    "gcb": "./bin/gemini-cli-bridge.ts"
+    "gemini-cli-bridge": "./dist/bin/gemini-cli-bridge.js",
+    "gcb": "./dist/bin/gemini-cli-bridge.js"
   },
   "scripts": {
     "test": "bun test",
-    "typecheck": "tsc --noEmit",
-    "start": "bun run bin/gemini-cli-bridge.ts"
+    "typecheck": "tsc --noEmit -p tsconfig.test.json",
+    "build": "tsc",
+    "start": "node dist/bin/gemini-cli-bridge.js",
+    "prestart": "npm run build",
+    "prepublishOnly": "npm run build"
   },
   "engines": {
+    "node": ">=20",
     "bun": ">=1"
   },
   "license": "MIT",
   "files": [
-    "bin",
-    "src",
+    "dist",
     "skills",
     "README.md"
   ],
   "devDependencies": {
+    "@types/node": "^25.6.0",
     "bun-types": "^1",
     "typescript": "^6.0.3"
   }

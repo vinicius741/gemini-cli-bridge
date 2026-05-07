@@ -1,5 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+import { existsSync } from "node:fs";
 import { assertReadableFile, buildPrompt, normalizeResult, runGemini } from "./gemini.js";
 
 const VERSION = "0.1.0";
@@ -157,5 +158,7 @@ Environment:
 
 function skillPath(): string {
   const here = dirname(fileURLToPath(import.meta.url));
-  return resolve(here, "../skills/gemini-cli-bridge/SKILL.md");
+  const fromHere = resolve(here, "../skills/gemini-cli-bridge/SKILL.md");
+  if (existsSync(fromHere)) return fromHere;
+  return resolve(here, "../../skills/gemini-cli-bridge/SKILL.md");
 }
