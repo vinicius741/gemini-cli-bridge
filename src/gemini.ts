@@ -4,11 +4,55 @@ import { constants } from "node:fs";
 
 export const DEFAULT_MODEL = "gemini-3.1-pro-preview";
 
-export async function assertReadableFile(path) {
+export interface BuildPromptOptions {
+  command: "search" | "fetch" | "analyze" | "ask";
+  input: string;
+  question?: string | null;
+  instruction?: string | null;
+}
+
+export interface RunGeminiOptions {
+  prompt: string;
+  geminiBin?: string;
+  model?: string;
+  timeoutMs?: number;
+  cwd?: string;
+  extraArgs?: string[];
+}
+
+export interface GeminiResult {
+  response?: string;
+  error?: string;
+  stats?: {
+    models?: Record<string, unknown>;
+    tools?: {
+      totalCalls?: number;
+      byName?: Record<string, unknown>;
+    };
+  };
+  [key: string]: unknown;
+}
+
+export interface NormalizedResult {
+  ok: boolean;
+  command: string;
+  input: string;
+  response: string;
+  error: string | null;
+  metadata: {
+    modelNames: string[];
+    toolCalls: number;
+    toolsUsed: string[];
+    prompt: string;
+  };
+  raw: GeminiResult;
+}
+
+export async function assertReadableFile(path: string): Promise<void> {
   await access(path, constants.R_OK);
 }
 
-export function buildPrompt({ command, input, question, instruction }) {
+export function buildPrompt({ command, input, question, instruction }: BuildPromptOptions): string {
   const baseInstruction =
     instruction ||
     "Return a concise, factual answer. Include source links when web results are used.";
@@ -55,10 +99,10 @@ export function runGemini({
   prompt,
   geminiBin = process.env.GEMINI_CLI_BRIDGE_GEMINI_BIN || "gemini",
   model = process.env.GEMINI_CLI_BRIDGE_MODEL || DEFAULT_MODEL,
-  timeoutMs = Number(process.env.GEMINI_CLI_BRIDGE_TIMEOUT_MS || 120000),
+  timeoutMs = Number(process.env.GEMINI_CLI_BRIDGE_TIMEOUT_MS || 120_000),
   cwd = process.cwd(),
   extraArgs = [],
-} = {}) {
+}: RunGeminiOptions): Promise<GeminiResult> {
   if (!prompt) throw new Error("Missing prompt.");
 
   const args = [
@@ -93,21 +137,21 @@ export function runGemini({
 
     child.stdout.setEncoding("utf8");
     child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk) => {
+    child.stdout.on("data", (chunk: string) => {
       stdout += chunk;
     });
-    child.stderr.on("data", (chunk) => {
+    child.stderr.on("data", (chunk: string) => {
       stderr += chunk;
     });
 
-    child.on("error", (error) => {
+    child.on("error", (error: Error) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
       reject(error);
     });
 
-    child.on("close", (code, signal) => {
+    child.on("close", (code: number | null, signal: NodeJS.Signals | null) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
@@ -122,7 +166,7 @@ export function runGemini({
   });
 }
 
-export function parseGeminiOutput(stdout, stderr = "") {
+export function parseGeminiOutput(stdout: string, stderr = ""): GeminiResult {
   const trimmed = stdout.trim();
   if (!trimmed) {
     throw new Error(`Gemini CLI returned no output.${stderr ? ` stderr: ${stderr}` : ""}`);
@@ -130,20 +174,34 @@ export function parseGeminiOutput(stdout, stderr = "") {
 
   try {
     const parsed = JSON.parse(trimmed);
-    if (parsed && typeof parsed === "object") return parsed;
+    if (parsed && typeof parsed === "object") return parsed as GeminiResult;
   } catch {
-    const jsonStart = trimmed.indexOf("{");
-    const jsonEnd = trimmed.lastIndexOf("}");
-    if (jsonStart !== -1 && jsonEnd > jsonStart) {
-      const parsed = JSON.parse(trimmed.slice(jsonStart, jsonEnd + 1));
-      if (parsed && typeof parsed === "object") return parsed;
+    try {
+      const jsonStart = trimmed.indexOf("{");
+      const jsonEnd = trimmed.lastIndexOf("}");
+      if (jsonStart !== -1 && jsonEnd > jsonStart) {
+        const parsed = JSON.parse(trimmed.slice(jsonStart, jsonEnd + 1));
+        if (parsed && typeof parsed === "object") return parsed as GeminiResult;
+      }
+    } catch {
+      // fall through to text fallback
     }
   }
 
   return { response: trimmed };
 }
 
-export function normalizeResult({ command, input, prompt, geminiResult }) {
+export function normalizeResult({
+  command,
+  input,
+  prompt,
+  geminiResult,
+}: {
+  command: string;
+  input: string;
+  prompt: string;
+  geminiResult: GeminiResult;
+}): NormalizedResult {
   const stats = geminiResult.stats || {};
   const tools = stats.tools || {};
 

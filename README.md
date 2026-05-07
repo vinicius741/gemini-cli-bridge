@@ -9,18 +9,18 @@ The bridge is intentionally small: Pi, OpenCode, Codex, or any other shell-capab
 From this repository:
 
 ```bash
-npm install -g .
+bun install
 ```
 
-Or use without global installation:
+Or use without installation:
 
 ```bash
-npm exec -- gemini-cli-bridge --help
+bun run bin/gemini-cli-bridge.ts --help
 ```
 
 Requirements:
 
-- Node.js 20+
+- [Bun](https://bun.sh) 1.0+
 - Google Gemini CLI installed and authenticated (`gemini --version`)
 
 ## Usage
@@ -56,7 +56,7 @@ Use `--text` to print only the answer.
 ## Options
 
 ```bash
-gemini-cli-bridge search "query" --model gemini-2.5-flash
+gemini-cli-bridge search "query" --model gemini-3.0-flash
 gemini-cli-bridge analyze ./photo.jpg "describe it" --timeout-ms 240000
 gemini-cli-bridge fetch "https://example.com" --instruction "Return bullet points with dates."
 ```

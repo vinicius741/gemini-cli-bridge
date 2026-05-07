@@ -1,8 +1,8 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 import { main } from "../src/cli.js";
 
-main(process.argv.slice(2)).catch((error) => {
+main(process.argv.slice(2)).catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
   console.error(message);
   process.exitCode = 1;

@@ -4,7 +4,19 @@ import { assertReadableFile, buildPrompt, normalizeResult, runGemini } from "./g
 
 const VERSION = "0.1.0";
 
-export async function main(argv) {
+export interface ParsedArgs {
+  command: string | null;
+  input: string | null;
+  question: string | null;
+  instruction: string | null;
+  model: string | undefined;
+  timeoutMs: number | undefined;
+  format: "json" | "text";
+  help: boolean;
+  version: boolean;
+}
+
+export async function main(argv: string[]): Promise<void> {
   const parsed = parseArgs(argv);
 
   if (parsed.help) {
@@ -40,7 +52,7 @@ export async function main(argv) {
   }
 
   const prompt = buildPrompt({
-    command: parsed.command,
+    command: parsed.command as "search" | "fetch" | "analyze" | "ask",
     input,
     question: parsed.question,
     instruction: parsed.instruction,
@@ -68,8 +80,8 @@ export async function main(argv) {
   if (!result.ok) process.exitCode = 1;
 }
 
-export function parseArgs(argv) {
-  const parsed = {
+export function parseArgs(argv: string[]): ParsedArgs {
+  const parsed: ParsedArgs = {
     command: null,
     input: null,
     question: null,
@@ -81,7 +93,7 @@ export function parseArgs(argv) {
     version: false,
   };
 
-  const positional = [];
+  const positional: string[] = [];
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === "-h" || arg === "--help") parsed.help = true;
@@ -110,13 +122,13 @@ export function parseArgs(argv) {
   return parsed;
 }
 
-function readValue(argv, index, flag) {
+function readValue(argv: string[], index: number, flag: string): string {
   const value = argv[index];
   if (!value || value.startsWith("--")) throw new Error(`${flag} requires a value.`);
   return value;
 }
 
-function helpText() {
+function helpText(): string {
   return `gemini-cli-bridge v${VERSION}
 
 Agent-friendly wrapper around Gemini CLI headless mode.
@@ -143,7 +155,7 @@ Environment:
   GEMINI_CLI_BRIDGE_TIMEOUT_MS       Default timeout override`;
 }
 
-function skillPath() {
+function skillPath(): string {
   const here = dirname(fileURLToPath(import.meta.url));
   return resolve(here, "../skills/gemini-cli-bridge/SKILL.md");
 }

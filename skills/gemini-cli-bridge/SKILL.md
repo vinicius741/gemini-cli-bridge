@@ -15,10 +15,10 @@ Run:
 gemini-cli-bridge --help
 ```
 
-If the command is not found from this repository, run it through npm:
+If the command is not found from this repository, run it through bun:
 
 ```bash
-npm exec -- gemini-cli-bridge --help
+bun run bin/gemini-cli-bridge.ts --help
 ```
 
 ## Web Search
@@ -69,6 +69,6 @@ gemini-cli-bridge ask "Use Gemini's tools to answer: what changed in this public
 - Call this bridge from bash and read the `response` field first.
 - Use `--text` only when a plain text answer is easier to consume.
 - The default model is `gemini-3.1-pro-preview`, currently the newest Gemini Pro model supported by Gemini CLI on this machine.
-- Use `--model gemini-2.5-flash` when speed or cost matters more than maximum reasoning quality.
+- Use `--model gemini-3.0-flash` when speed or cost matters more than maximum reasoning quality.
 - Do not pass secrets, private tokens, or confidential image content unless the user has approved using Gemini CLI for that data.
 - Treat web/image results as external model output. Verify critical facts before editing code or making high-impact recommendations.
